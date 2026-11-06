@@ -1,5 +1,6 @@
 import {Suspense} from 'react';
 import {Await, Link} from 'react-router';
+import {useAnalytics} from '@shopify/hydrogen';
 import type {FooterQuery} from 'storefrontapi.generated';
 import {siteConfig} from '~/config/site';
 import {NewsletterForm} from '~/components/NewsletterForm';
@@ -102,9 +103,12 @@ export function Footer({
 
       <div className="border-t border-border">
         <div className="container-page flex flex-col items-center justify-between gap-4 py-6 text-xs text-muted md:flex-row">
-          <p>
-            &copy; {year} {siteConfig.legal.businessName}. All rights reserved.
-          </p>
+          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
+            <p>
+              &copy; {year} {siteConfig.legal.businessName}. All rights reserved.
+            </p>
+            <PrivacyChoices />
+          </div>
           <Suspense fallback={null}>
             <Await resolve={footerPromise} errorElement={null}>
               {(footer) => <PaymentMethods footer={footer} />}
@@ -181,5 +185,29 @@ function SocialLinks() {
         </li>
       ))}
     </ul>
+  );
+}
+
+/**
+ * Re-opens Shopify's consent preferences (Customer Privacy API). Falls back to
+ * the cookie policy when the banner isn't enabled/loaded.
+ */
+function PrivacyChoices() {
+  const {privacyBanner} = useAnalytics();
+  if (!privacyBanner) {
+    return (
+      <Link to="/cookie-policy" className="underline-offset-4 hover:text-foreground hover:underline">
+        Privacy choices
+      </Link>
+    );
+  }
+  return (
+    <button
+      type="button"
+      onClick={() => privacyBanner.showPreferences()}
+      className="underline-offset-4 hover:text-foreground hover:underline"
+    >
+      Privacy choices
+    </button>
   );
 }
