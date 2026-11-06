@@ -1,9 +1,16 @@
 import {useLoaderData, Link} from 'react-router';
 import type {Route} from './+types/policies._index';
 import type {PoliciesQuery, PolicyItemFragment} from 'storefrontapi.generated';
+import {ContentPage} from '~/components/ContentPage';
+import {Icon} from '~/components/ui/Icon';
+import {seoMeta} from '~/lib/seo';
+
+export const meta: Route.MetaFunction = () => seoMeta({title: 'Policies'});
 
 export async function loader({context}: Route.LoaderArgs) {
-  const data: PoliciesQuery = await context.storefront.query(POLICIES_QUERY);
+  const data: PoliciesQuery = await context.storefront.query(POLICIES_QUERY, {
+    cache: context.storefront.CacheLong(),
+  });
 
   const shopPolicies = data.shop;
   const policies: PolicyItemFragment[] = [
@@ -25,16 +32,23 @@ export default function Policies() {
   const {policies} = useLoaderData<typeof loader>();
 
   return (
-    <div className="policies">
-      <h1>Policies</h1>
-      <div>
-        {policies.map((policy) => (
-          <fieldset key={policy.id}>
-            <Link to={`/policies/${policy.handle}`}>{policy.title}</Link>
-          </fieldset>
+    <ContentPage title="Policies" path="/policies" intro="Our store policies, managed in Shopify.">
+      <ul className="divide-y divide-border border-y border-border">
+        {[
+          ...policies.map((p) => ({key: p.id, title: p.title, to: `/policies/${p.handle}`})),
+          {key: 'cookie', title: 'Cookie Policy', to: '/cookie-policy'},
+          {key: 'a11y', title: 'Accessibility Statement', to: '/accessibility'},
+          {key: 'promo', title: 'Promotional Terms', to: '/promotional-terms'},
+        ].map((item) => (
+          <li key={item.key}>
+            <Link to={item.to} className="flex items-center justify-between py-4 hover:text-accent">
+              {item.title}
+              <Icon name="chevronRight" className="size-4" />
+            </Link>
+          </li>
         ))}
-      </div>
-    </div>
+      </ul>
+    </ContentPage>
   );
 }
 

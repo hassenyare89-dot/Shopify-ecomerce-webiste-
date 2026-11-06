@@ -9,15 +9,16 @@ import {
   useOutletContext,
 } from 'react-router';
 import type {Route} from './+types/account.profile';
+import {Button} from '~/components/ui/Button';
+import {Field, Notice} from '~/components/ui/primitives';
+import {sanitizeText} from '~/lib/security';
 
 export type ActionResponse = {
   error: string | null;
   customer: CustomerFragment | null;
 };
 
-export const meta: Route.MetaFunction = () => {
-  return [{title: 'Profile'}];
-};
+export const meta: Route.MetaFunction = () => [{title: 'Profile'}, {name: 'robots', content: 'noindex'}];
 
 export async function loader({context}: Route.LoaderArgs) {
   await context.customerAccount.handleAuthStatus();
@@ -42,7 +43,7 @@ export async function action({request, context}: Route.ActionArgs) {
         continue;
       }
       if (typeof value === 'string' && value.length) {
-        customer[key as (typeof validInputKeys)[number]] = value;
+        customer[key as (typeof validInputKeys)[number]] = sanitizeText(value, 100);
       }
     }
 
@@ -86,48 +87,49 @@ export default function AccountProfile() {
   const customer = action?.customer ?? account?.customer;
 
   return (
-    <div className="account-profile">
-      <h2>My profile</h2>
-      <br />
-      <Form method="PUT">
-        <legend>Personal information</legend>
-        <fieldset>
-          <label htmlFor="firstName">First name</label>
-          <input
-            id="firstName"
-            name="firstName"
-            type="text"
-            autoComplete="given-name"
-            placeholder="First name"
-            aria-label="First name"
-            defaultValue={customer.firstName ?? ''}
-            minLength={2}
-          />
-          <label htmlFor="lastName">Last name</label>
-          <input
-            id="lastName"
-            name="lastName"
-            type="text"
-            autoComplete="family-name"
-            placeholder="Last name"
-            aria-label="Last name"
-            defaultValue={customer.lastName ?? ''}
-            minLength={2}
-          />
+    <div className="space-y-8">
+      <h2 className="text-2xl">Profile &amp; settings</h2>
+      <Form method="PUT" className="max-w-xl space-y-5 rounded-brand border border-border p-6">
+        <fieldset className="space-y-5">
+          <legend className="mb-2 font-semibold">Personal information</legend>
+          <div className="grid gap-5 sm:grid-cols-2">
+            <Field label="First name" name="firstName" autoComplete="given-name" defaultValue={customer.firstName ?? ''} minLength={2} maxLength={100} />
+            <Field label="Last name" name="lastName" autoComplete="family-name" defaultValue={customer.lastName ?? ''} minLength={2} maxLength={100} />
+          </div>
         </fieldset>
-        {action?.error ? (
-          <p>
-            <mark>
-              <small>{action.error}</small>
-            </mark>
-          </p>
-        ) : (
-          <br />
-        )}
-        <button type="submit" disabled={state !== 'idle'}>
-          {state !== 'idle' ? 'Updating' : 'Update'}
-        </button>
+        {action?.error ? <Notice tone="error">{action.error}</Notice> : null}
+        {action && !action.error ? <Notice tone="success">Profile updated.</Notice> : null}
+        <Button type="submit" loading={state !== 'idle'}>
+          Save changes
+        </Button>
       </Form>
+
+      <section className="max-w-xl space-y-3 rounded-brand border border-border p-6 text-sm">
+        <h3 className="font-body text-base font-semibold tracking-normal">Sign-in &amp; email</h3>
+        <p>
+          <span className="text-muted">Email: </span>
+          {customer.emailAddress?.emailAddress ?? '—'}
+        </p>
+        <p className="text-muted">
+          Your sign-in is managed securely by Shopify using one-time email codes, so there’s no password to manage.
+          Marketing emails:{' '}
+          <strong className="text-foreground">
+            {customer.emailAddress?.marketingState === 'SUBSCRIBED' ? 'subscribed' : 'not subscribed'}
+          </strong>
+          . You can unsubscribe at any time from any marketing email.
+        </p>
+      </section>
+
+      <section className="max-w-xl space-y-2 rounded-brand border border-border p-6 text-sm">
+        <h3 className="font-body text-base font-semibold tracking-normal">Your privacy</h3>
+        <p className="text-muted">
+          To request a copy of your data or ask us to delete it, contact us — see our{' '}
+          <a href="/policies/privacy-policy" className="underline">
+            Privacy Policy
+          </a>{' '}
+          for your rights.
+        </p>
+      </section>
     </div>
   );
 }

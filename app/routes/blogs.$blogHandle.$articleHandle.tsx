@@ -2,9 +2,35 @@ import {useLoaderData} from 'react-router';
 import type {Route} from './+types/blogs.$blogHandle.$articleHandle';
 import {Image} from '@shopify/hydrogen';
 import {redirectIfHandleIsLocalized} from '~/lib/redirect';
+import {Breadcrumbs} from '~/components/ui/Breadcrumbs';
+import {formatDate} from '~/lib/format';
+import {articleJsonLd, breadcrumbJsonLd, canonicalUrl, seoMeta} from '~/lib/seo';
 
 export const meta: Route.MetaFunction = ({data}) => {
-  return [{title: `Hydrogen | ${data?.article.title ?? ''} article`}];
+  if (!data) return seoMeta({title: 'Article not found', noindex: true});
+  const {article, canonical, origin, blogHandle} = data;
+  return seoMeta({
+    title: article.seo?.title ?? article.title,
+    description: article.seo?.description ?? article.contentHtml,
+    url: canonical,
+    image: article.image,
+    type: 'article',
+    jsonLd: [
+      articleJsonLd({
+        url: canonical,
+        title: article.title,
+        description: article.seo?.description ?? article.contentHtml,
+        image: article.image?.url,
+        publishedAt: article.publishedAt,
+        author: article.author?.name,
+      }),
+      breadcrumbJsonLd(origin, [
+        {name: 'Home', path: '/'},
+        {name: 'Journal', path: `/blogs/${blogHandle}`},
+        {name: article.title, path: `/blogs/${blogHandle}/${article.handle}`},
+      ]),
+    ],
+  });
 };
 
 export async function loader(args: Route.LoaderArgs) {
@@ -31,6 +57,7 @@ async function loadCriticalData({context, request, params}: Route.LoaderArgs) {
   const [{blog}] = await Promise.all([
     context.storefront.query(ARTICLE_QUERY, {
       variables: {blogHandle, articleHandle},
+      cache: context.storefront.CacheLong(),
     }),
     // Add other queries here, so that they are loaded in parallel
   ]);
@@ -53,7 +80,12 @@ async function loadCriticalData({context, request, params}: Route.LoaderArgs) {
 
   const article = blog.articleByHandle;
 
-  return {article};
+  return {
+    article,
+    blogHandle,
+    origin: new URL(request.url).origin,
+    canonical: canonicalUrl(request.url),
+  };
 }
 
 /**
@@ -66,30 +98,33 @@ function loadDeferredData({context}: Route.LoaderArgs) {
 }
 
 export default function Article() {
-  const {article} = useLoaderData<typeof loader>();
+  const {article, blogHandle} = useLoaderData<typeof loader>();
   const {title, image, contentHtml, author} = article;
 
-  const publishedDate = new Intl.DateTimeFormat('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  }).format(new Date(article.publishedAt));
-
   return (
-    <div className="article">
-      <h1>
-        {title}
-        <div>
-          <time dateTime={article.publishedAt}>{publishedDate}</time> &middot;{' '}
-          <address>{author?.name}</address>
-        </div>
-      </h1>
-
-      {image && <Image data={image} sizes="90vw" loading="eager" />}
-      <div
-        dangerouslySetInnerHTML={{__html: contentHtml}}
-        className="article"
+    <div className="container-page py-8 md:py-12">
+      <Breadcrumbs
+        crumbs={[
+          {name: 'Home', path: '/'},
+          {name: 'Journal', path: `/blogs/${blogHandle}`},
+          {name: title, path: `/blogs/${blogHandle}/${article.handle}`},
+        ]}
       />
+      <article className="mx-auto max-w-3xl">
+        <header className="mb-10 text-center">
+          <p className="text-sm text-muted">
+            <time dateTime={article.publishedAt}>{formatDate(article.publishedAt, {style: 'long'})}</time>
+            {author?.name ? <> · {author.name}</> : null}
+          </p>
+          <h1 className="mt-3 text-4xl md:text-6xl">{title}</h1>
+        </header>
+        {image ? (
+          <div className="mb-12 overflow-hidden rounded-brand">
+            <Image data={image} sizes="(min-width: 768px) 768px, 100vw" loading="eager" className="w-full" />
+          </div>
+        ) : null}
+        <div className="prose-store text-lg" dangerouslySetInnerHTML={{__html: contentHtml}} />
+      </article>
     </div>
   );
 }

@@ -1,19 +1,23 @@
-import {Await, Link} from 'react-router';
-import {Suspense, useId} from 'react';
+import {Await} from 'react-router';
+import {Suspense} from 'react';
 import type {
   CartApiQueryFragment,
   FooterQuery,
   HeaderQuery,
 } from 'storefrontapi.generated';
-import {Aside} from '~/components/Aside';
-import {Footer} from '~/components/Footer';
-import {Header, HeaderMenu} from '~/components/Header';
+import {Aside, useAside} from '~/components/Aside';
+import {Header, NavItemLink} from '~/components/layout/Header';
+import {Footer} from '~/components/layout/Footer';
+import {AnnouncementBar} from '~/components/layout/AnnouncementBar';
+import {ThemeToggle} from '~/components/layout/ThemeToggle';
 import {CartMain} from '~/components/CartMain';
-import {
-  SEARCH_ENDPOINT,
-  SearchFormPredictive,
-} from '~/components/SearchFormPredictive';
-import {SearchResultsPredictive} from '~/components/SearchResultsPredictive';
+import {PredictiveSearch} from '~/components/PredictiveSearch';
+import {ToastProvider} from '~/components/ui/Toast';
+import {Skeleton} from '~/components/ui/primitives';
+import {Icon} from '~/components/ui/Icon';
+import {buildNavigation, type NavItem} from '~/lib/menu';
+import {siteConfig} from '~/config/site';
+import {Link} from 'react-router';
 
 interface PageLayoutProps {
   cart: Promise<CartApiQueryFragment | null>;
@@ -32,143 +36,113 @@ export function PageLayout({
   isLoggedIn,
   publicStoreDomain,
 }: PageLayoutProps) {
+  const primaryDomainUrl = header?.shop?.primaryDomain?.url;
+  const navigation = buildNavigation(header?.menu, {publicStoreDomain, primaryDomainUrl});
+
   return (
-    <Aside.Provider>
-      <CartAside cart={cart} />
-      <SearchAside />
-      <MobileMenuAside header={header} publicStoreDomain={publicStoreDomain} />
-      {header && (
-        <Header
-          header={header}
-          cart={cart}
-          isLoggedIn={isLoggedIn}
-          publicStoreDomain={publicStoreDomain}
-        />
-      )}
-      <main>{children}</main>
-      <Footer
-        footer={footer}
-        header={header}
-        publicStoreDomain={publicStoreDomain}
-      />
-    </Aside.Provider>
+    <ToastProvider>
+      <Aside.Provider>
+        <CartAside cart={cart} />
+        <Aside type="search" heading="Search" width="lg">
+          <PredictiveSearch />
+        </Aside>
+        <MobileMenuAside navigation={navigation} />
+        <div id="app-shell" className="flex min-h-dvh flex-col">
+          <a
+            href="#main-content"
+            className="sr-only z-[70] rounded-full bg-primary px-4 py-2 text-primary-foreground focus:not-sr-only focus:fixed focus:top-3 focus:left-3"
+          >
+            Skip to content
+          </a>
+          <AnnouncementBar />
+          <Header header={header} navigation={navigation} cart={cart} isLoggedIn={isLoggedIn} />
+          <main id="main-content" tabIndex={-1} className="flex-1 outline-none">
+            {children}
+          </main>
+          <Footer
+            footer={footer}
+            publicStoreDomain={publicStoreDomain}
+            primaryDomainUrl={primaryDomainUrl}
+          />
+        </div>
+      </Aside.Provider>
+    </ToastProvider>
   );
 }
 
 function CartAside({cart}: {cart: PageLayoutProps['cart']}) {
   return (
-    <Aside type="cart" heading="CART">
-      <Suspense fallback={<p>Loading cart ...</p>}>
+    <Aside type="cart" heading="Your cart">
+      <Suspense
+        fallback={
+          <div className="space-y-4 p-5" aria-label="Loading cart" role="status">
+            <Skeleton className="h-24 w-full" />
+            <Skeleton className="h-24 w-full" />
+          </div>
+        }
+      >
         <Await resolve={cart}>
-          {(cart) => {
-            return <CartMain cart={cart} layout="aside" />;
-          }}
+          {(cart) => <CartMain cart={cart} layout="aside" />}
         </Await>
       </Suspense>
     </Aside>
   );
 }
 
-function SearchAside() {
-  const queriesDatalistId = useId();
+function MobileMenuAside({navigation}: {navigation: NavItem[]}) {
+  const {close} = useAside();
   return (
-    <Aside type="search" heading="SEARCH">
-      <div className="predictive-search">
-        <br />
-        <SearchFormPredictive>
-          {({fetchResults, goToSearch, inputRef}) => (
-            <>
-              <input
-                name="q"
-                onChange={fetchResults}
-                onFocus={fetchResults}
-                placeholder="Search"
-                ref={inputRef}
-                type="search"
-                list={queriesDatalistId}
-              />
-              &nbsp;
-              <button onClick={goToSearch}>Search</button>
-            </>
-          )}
-        </SearchFormPredictive>
-
-        <SearchResultsPredictive>
-          {({items, total, term, state, closeSearch}) => {
-            const {articles, collections, pages, products, queries} = items;
-
-            if (state === 'loading' && term.current) {
-              return <div>Loading...</div>;
-            }
-
-            if (!total) {
-              return <SearchResultsPredictive.Empty term={term} />;
-            }
-
-            return (
-              <>
-                <SearchResultsPredictive.Queries
-                  queries={queries}
-                  queriesDatalistId={queriesDatalistId}
-                />
-                <SearchResultsPredictive.Products
-                  products={products}
-                  closeSearch={closeSearch}
-                  term={term}
-                />
-                <SearchResultsPredictive.Collections
-                  collections={collections}
-                  closeSearch={closeSearch}
-                  term={term}
-                />
-                <SearchResultsPredictive.Pages
-                  pages={pages}
-                  closeSearch={closeSearch}
-                  term={term}
-                />
-                <SearchResultsPredictive.Articles
-                  articles={articles}
-                  closeSearch={closeSearch}
-                  term={term}
-                />
-                {term.current && total ? (
-                  <Link
-                    onClick={closeSearch}
-                    to={`${SEARCH_ENDPOINT}?q=${term.current}`}
-                  >
-                    <p>
-                      View all results for <q>{term.current}</q>
-                      &nbsp; →
-                    </p>
-                  </Link>
-                ) : null}
-              </>
-            );
-          }}
-        </SearchResultsPredictive>
-      </div>
+    <Aside type="mobile" heading="Menu" side="left">
+      <nav aria-label="Mobile" className="flex h-full flex-col">
+        <ul className="divide-y divide-border px-5">
+          {navigation.map((item) => (
+            <li key={item.id}>
+              {item.items.length ? (
+                <details className="group">
+                  <summary className="flex cursor-pointer list-none items-center justify-between py-4 text-lg font-medium [&::-webkit-details-marker]:hidden">
+                    {item.title}
+                    <Icon name="chevronDown" className="size-4 transition group-open:rotate-180" />
+                  </summary>
+                  <ul className="space-y-1 pb-4 pl-2">
+                    <li>
+                      <NavItemLink item={item} onClick={close} className="block py-2 text-muted">
+                        All {item.title}
+                      </NavItemLink>
+                    </li>
+                    {item.items.map((child) => (
+                      <li key={child.id}>
+                        <NavItemLink item={child} onClick={close} className="block py-2 text-muted">
+                          {child.title}
+                        </NavItemLink>
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+              ) : (
+                <NavItemLink item={item} onClick={close} className="block py-4 text-lg font-medium">
+                  {item.title}
+                </NavItemLink>
+              )}
+            </li>
+          ))}
+        </ul>
+        <div className="mt-auto space-y-1 border-t border-border p-5 text-sm">
+          <Link to="/account" onClick={close} className="flex items-center gap-3 py-2">
+            <Icon name="user" className="size-4" /> Account
+          </Link>
+          <Link to="/wishlist" onClick={close} className="flex items-center gap-3 py-2">
+            <Icon name="heart" className="size-4" /> Wishlist
+          </Link>
+          <Link to="/contact" onClick={close} className="flex items-center gap-3 py-2">
+            <Icon name="mail" className="size-4" /> Contact us
+          </Link>
+          {siteConfig.theme.enableDarkMode ? (
+            <div className="flex items-center gap-1 pt-2">
+              <ThemeToggle /> <span>Theme</span>
+            </div>
+          ) : null}
+        </div>
+      </nav>
     </Aside>
-  );
-}
-
-function MobileMenuAside({
-  header,
-  publicStoreDomain,
-}: {
-  header: PageLayoutProps['header'];
-  publicStoreDomain: PageLayoutProps['publicStoreDomain'];
-}) {
-  return (
-    header.menu &&
-    header.shop.primaryDomain?.url && (
-      <Aside type="mobile" heading="MENU">
-        <HeaderMenu
-          menu={header.menu}
-          viewport="mobile"
-          primaryDomainUrl={header.shop.primaryDomain.url}
-          publicStoreDomain={publicStoreDomain}
-        />
-      </Aside>
-    )
   );
 }

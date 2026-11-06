@@ -1,135 +1,110 @@
 import {redirect, useLoaderData} from 'react-router';
 import type {Route} from './+types/collections.$handle';
 import {getPaginationVariables, Analytics} from '@shopify/hydrogen';
-import {PaginatedResourceSection} from '~/components/PaginatedResourceSection';
+import {CollectionHeader} from '~/components/CollectionHeader';
 import {redirectIfHandleIsLocalized} from '~/lib/redirect';
-import {ProductItem} from '~/components/ProductItem';
-import type {ProductItemFragment} from 'storefrontapi.generated';
+import {ProductListing} from '~/components/ProductListing';
+import {Breadcrumbs} from '~/components/ui/Breadcrumbs';
+import {PRODUCT_CARD_FRAGMENT} from '~/lib/fragments';
+import {
+  COLLECTION_SORT_OPTIONS,
+  getCollectionSort,
+  getSortParam,
+  parseFiltersFromSearchParams,
+} from '~/lib/filters';
+import {breadcrumbJsonLd, canonicalUrl, seoMeta} from '~/lib/seo';
+import {siteConfig} from '~/config/site';
 
 export const meta: Route.MetaFunction = ({data}) => {
-  return [{title: `Hydrogen | ${data?.collection.title ?? ''} Collection`}];
+  if (!data) return seoMeta({title: 'Collection not found', noindex: true});
+  const {collection, canonical, origin, filtered} = data;
+  return seoMeta({
+    title: collection.seo?.title || collection.title,
+    description: collection.seo?.description || collection.description,
+    url: canonical,
+    image: collection.image,
+    // Filtered/sorted variants of a collection shouldn't be indexed separately.
+    noindex: filtered,
+    jsonLd: breadcrumbJsonLd(origin, [
+      {name: 'Home', path: '/'},
+      {name: 'Collections', path: '/collections'},
+      {name: collection.title, path: `/collections/${collection.handle}`},
+    ]),
+  });
 };
 
-export async function loader(args: Route.LoaderArgs) {
-  // Start fetching non-critical data without blocking time to first byte
-  const deferredData = loadDeferredData(args);
-
-  // Await the critical data required to render initial state of the page
-  const criticalData = await loadCriticalData(args);
-
-  return {...deferredData, ...criticalData};
-}
-
-/**
- * Load data necessary for rendering content above the fold. This is the critical data
- * needed to render the page. If it's unavailable, the whole page should 400 or 500 error.
- */
-async function loadCriticalData({context, params, request}: Route.LoaderArgs) {
+export async function loader({context, params, request}: Route.LoaderArgs) {
   const {handle} = params;
   const {storefront} = context;
-  const paginationVariables = getPaginationVariables(request, {
-    pageBy: 8,
+  if (!handle) throw redirect('/collections');
+
+  const url = new URL(request.url);
+  const searchParams = url.searchParams;
+  const paginationVariables = getPaginationVariables(request, {pageBy: siteConfig.pageSize});
+  const sort = getSortParam(searchParams, 'featured');
+  const {sortKey, reverse} = getCollectionSort(sort);
+  const filters = parseFiltersFromSearchParams(searchParams);
+
+  const {collection} = await storefront.query(COLLECTION_QUERY, {
+    variables: {handle, filters, sortKey, reverse, ...paginationVariables},
+    cache: storefront.CacheShort(),
   });
 
-  if (!handle) {
-    throw redirect('/collections');
-  }
-
-  const [{collection}] = await Promise.all([
-    storefront.query(COLLECTION_QUERY, {
-      variables: {handle, ...paginationVariables},
-      // Add other queries here, so that they are loaded in parallel
-    }),
-  ]);
-
   if (!collection) {
-    throw new Response(`Collection ${handle} not found`, {
-      status: 404,
-    });
+    throw new Response(`Collection ${handle} not found`, {status: 404});
   }
-
-  // The API handle might be localized, so redirect to the localized handle
   redirectIfHandleIsLocalized(request, {handle, data: collection});
 
   return {
     collection,
+    sort,
+    origin: url.origin,
+    canonical: canonicalUrl(request.url),
+    filtered: filters.length > 0 || searchParams.has('sort') || searchParams.has('cursor'),
   };
 }
 
-/**
- * Load data for rendering content below the fold. This data is deferred and will be
- * fetched after the initial page load. If it's unavailable, the page should still 200.
- * Make sure to not throw any errors here, as it will cause the page to 500.
- */
-function loadDeferredData({context}: Route.LoaderArgs) {
-  return {};
-}
-
 export default function Collection() {
-  const {collection} = useLoaderData<typeof loader>();
+  const {collection, sort} = useLoaderData<typeof loader>();
+  const currency =
+    collection.products.nodes[0]?.priceRange.minVariantPrice.currencyCode ?? 'USD';
 
   return (
-    <div className="collection">
-      <h1>{collection.title}</h1>
-      <p className="collection-description">{collection.description}</p>
-      <PaginatedResourceSection<ProductItemFragment>
-        connection={collection.products}
-        resourcesClassName="products-grid"
-      >
-        {({node: product, index}) => (
-          <ProductItem
-            key={product.id}
-            product={product}
-            loading={index < 8 ? 'eager' : undefined}
-          />
-        )}
-      </PaginatedResourceSection>
+    <div className="container-page py-8 md:py-12">
+      <Breadcrumbs
+        crumbs={[
+          {name: 'Home', path: '/'},
+          {name: 'Collections', path: '/collections'},
+          {name: collection.title, path: `/collections/${collection.handle}`},
+        ]}
+      />
+      <CollectionHeader
+        title={collection.title}
+        description={collection.description}
+        image={collection.image}
+      />
+      <ProductListing
+        products={collection.products}
+        filters={collection.products.filters}
+        sortOptions={COLLECTION_SORT_OPTIONS}
+        sort={sort}
+        currencyCode={currency}
+      />
       <Analytics.CollectionView
-        data={{
-          collection: {
-            id: collection.id,
-            handle: collection.handle,
-          },
-        }}
+        data={{collection: {id: collection.id, handle: collection.handle}}}
       />
     </div>
   );
 }
 
-const PRODUCT_ITEM_FRAGMENT = `#graphql
-  fragment MoneyProductItem on MoneyV2 {
-    amount
-    currencyCode
-  }
-  fragment ProductItem on Product {
-    id
-    handle
-    title
-    featuredImage {
-      id
-      altText
-      url
-      width
-      height
-    }
-    priceRange {
-      minVariantPrice {
-        ...MoneyProductItem
-      }
-      maxVariantPrice {
-        ...MoneyProductItem
-      }
-    }
-  }
-` as const;
-
-// NOTE: https://shopify.dev/docs/api/storefront/2022-04/objects/collection
 const COLLECTION_QUERY = `#graphql
-  ${PRODUCT_ITEM_FRAGMENT}
   query Collection(
     $handle: String!
     $country: CountryCode
     $language: LanguageCode
+    $filters: [ProductFilter!]
+    $sortKey: ProductCollectionSortKeys!
+    $reverse: Boolean
     $first: Int
     $last: Int
     $startCursor: String
@@ -140,14 +115,48 @@ const COLLECTION_QUERY = `#graphql
       handle
       title
       description
+      seo {
+        title
+        description
+      }
+      image {
+        id
+        url
+        width
+        height
+        altText
+      }
       products(
-        first: $first,
-        last: $last,
-        before: $startCursor,
+        first: $first
+        last: $last
+        before: $startCursor
         after: $endCursor
+        filters: $filters
+        sortKey: $sortKey
+        reverse: $reverse
       ) {
+        filters {
+          id
+          label
+          type
+          presentation
+          values {
+            id
+            label
+            count
+            input
+            swatch {
+              color
+              image {
+                previewImage {
+                  url
+                }
+              }
+            }
+          }
+        }
         nodes {
-          ...ProductItem
+          ...ProductCard
         }
         pageInfo {
           hasPreviousPage
@@ -158,4 +167,5 @@ const COLLECTION_QUERY = `#graphql
       }
     }
   }
+  ${PRODUCT_CARD_FRAGMENT}
 ` as const;

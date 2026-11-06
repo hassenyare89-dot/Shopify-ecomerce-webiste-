@@ -21,13 +21,21 @@ export class AppSession implements HydrogenSession {
     this.#session = session;
   }
 
-  static async init(request: Request, secrets: string[]) {
+  static async init(
+    request: Request,
+    secrets: string[],
+    {secure = true}: {secure?: boolean} = {},
+  ) {
     const storage = createCookieSessionStorage({
       cookie: {
         name: 'session',
         httpOnly: true,
         path: '/',
         sameSite: 'lax',
+        // Secure in production (HTTPS); relaxed only for http://localhost dev.
+        secure,
+        // 30 days; rotate SESSION_SECRET to invalidate all sessions.
+        maxAge: 60 * 60 * 24 * 30,
         secrets,
       },
     });

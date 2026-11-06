@@ -1,24 +1,30 @@
-import {useLoaderData, data, type HeadersFunction} from 'react-router';
+import {Suspense} from 'react';
+import {Await, useLoaderData, data, type HeadersFunction} from 'react-router';
 import type {Route} from './+types/cart';
 import type {CartQueryDataReturn} from '@shopify/hydrogen';
-import {CartForm} from '@shopify/hydrogen';
+import {CartForm, Analytics} from '@shopify/hydrogen';
 import {CartMain} from '~/components/CartMain';
+import {ProductRail} from '~/components/ProductRail';
+import {seoMeta} from '~/lib/seo';
+import {sanitizeText} from '~/lib/security';
+import {PRODUCT_CARD_FRAGMENT} from '~/lib/fragments';
 
-export const meta: Route.MetaFunction = () => {
-  return [{title: `Hydrogen | Cart`}];
-};
+export const meta: Route.MetaFunction = () =>
+  seoMeta({title: 'Cart', noindex: true});
 
 export const headers: HeadersFunction = ({actionHeaders}) => actionHeaders;
 
+/**
+ * All cart mutations go through Shopify's Cart API via Hydrogen's cart
+ * handler. We never compute authoritative totals locally.
+ */
 export async function action({request, context}: Route.ActionArgs) {
   const {cart} = context;
-
   const formData = await request.formData();
-
   const {action, inputs} = CartForm.getFormInput(formData);
 
   if (!action) {
-    throw new Error('No action provided');
+    return data({errors: [{message: 'No cart action provided'}]}, {status: 400});
   }
 
   let status = 200;
@@ -35,52 +41,53 @@ export async function action({request, context}: Route.ActionArgs) {
       result = await cart.removeLines(inputs.lineIds);
       break;
     case CartForm.ACTIONS.DiscountCodesUpdate: {
-      const formDiscountCode = inputs.discountCode;
-
-      // User inputted discount code
-      const discountCodes = (
-        formDiscountCode ? [formDiscountCode] : []
-      ) as string[];
-
-      // Combine discount codes already applied on cart
-      discountCodes.push(...inputs.discountCodes);
-
-      result = await cart.updateDiscountCodes(discountCodes);
+      const formDiscountCode = sanitizeText(inputs.discountCode, 64);
+      const discountCodes = formDiscountCode ? [formDiscountCode] : [];
+      discountCodes.push(...((inputs.discountCodes as string[]) ?? []));
+      result = await cart.updateDiscountCodes(
+        Array.from(new Set(discountCodes)),
+      );
       break;
     }
     case CartForm.ACTIONS.GiftCardCodesAdd: {
-      const formGiftCardCode = inputs.giftCardCode;
-
-      const giftCardCodes = (
-        formGiftCardCode ? [formGiftCardCode] : []
-      ) as string[];
-
-      result = await cart.addGiftCardCodes(giftCardCodes);
+      const code = sanitizeText(inputs.giftCardCode, 32);
+      result = await cart.addGiftCardCodes(code ? [code] : []);
       break;
     }
     case CartForm.ACTIONS.GiftCardCodesRemove: {
-      const appliedGiftCardIds = inputs.giftCardCodes as string[];
-      result = await cart.removeGiftCardCodes(appliedGiftCardIds);
+      result = await cart.removeGiftCardCodes(inputs.giftCardCodes as string[]);
+      break;
+    }
+    case CartForm.ACTIONS.NoteUpdate: {
+      result = await cart.updateNote(sanitizeText(inputs.note, 500));
       break;
     }
     case CartForm.ACTIONS.BuyerIdentityUpdate: {
-      result = await cart.updateBuyerIdentity({
-        ...inputs.buyerIdentity,
-      });
+      result = await cart.updateBuyerIdentity({...inputs.buyerIdentity});
       break;
     }
     default:
-      throw new Error(`${action} cart action is not defined`);
+      return data(
+        {errors: [{message: `${action} cart action is not supported`}]},
+        {status: 400},
+      );
   }
 
   const cartId = result?.cart?.id;
   const headers = cartId ? cart.setCartId(result.cart.id) : new Headers();
-  const {cart: cartResult, errors, warnings} = result;
+  const {cart: cartResult, errors, warnings, userErrors} = result;
 
-  const redirectTo = formData.get('redirectTo') ?? null;
-  if (typeof redirectTo === 'string') {
+  // "Buy now": send the shopper straight to Shopify's hosted checkout.
+  const checkoutUrl = cartResult?.checkoutUrl;
+  if (
+    inputs.buyNow === '1' &&
+    !errors?.length &&
+    !userErrors?.length &&
+    typeof checkoutUrl === 'string' &&
+    checkoutUrl.startsWith('https://')
+  ) {
     status = 303;
-    headers.set('Location', redirectTo);
+    headers.set('Location', checkoutUrl);
   }
 
   return data(
@@ -88,26 +95,63 @@ export async function action({request, context}: Route.ActionArgs) {
       cart: cartResult,
       errors,
       warnings,
-      analytics: {
-        cartId,
-      },
+      userErrors,
+      analytics: {cartId},
     },
     {status, headers},
   );
 }
 
 export async function loader({context}: Route.LoaderArgs) {
-  const {cart} = context;
-  return await cart.get();
+  const {cart, storefront} = context;
+  const cartData = await cart.get();
+  const firstProductId = cartData?.lines?.nodes?.[0]?.merchandise?.product?.id;
+
+  const recommendations = firstProductId
+    ? storefront
+        .query(CART_RECOMMENDATIONS_QUERY, {
+          variables: {productId: firstProductId},
+          cache: storefront.CacheShort(),
+        })
+        .then((r) => r.productRecommendations ?? [])
+        .catch(() => [])
+    : Promise.resolve([]);
+
+  return {cart: cartData, recommendations};
 }
 
 export default function Cart() {
-  const cart = useLoaderData<typeof loader>();
+  const {cart, recommendations} = useLoaderData<typeof loader>();
 
   return (
-    <div className="cart">
-      <h1>Cart</h1>
+    <div className="container-page py-10 md:py-14">
+      <h1 className="mb-8 text-4xl md:text-5xl">Your cart</h1>
       <CartMain layout="page" cart={cart} />
+      <Suspense fallback={null}>
+        <Await resolve={recommendations}>
+          {(products) =>
+            products.length ? (
+              <div className="mt-20">
+                <ProductRail title="You may also like" products={products} />
+              </div>
+            ) : null
+          }
+        </Await>
+      </Suspense>
+      <Analytics.CartView />
     </div>
   );
 }
+
+const CART_RECOMMENDATIONS_QUERY = `#graphql
+  query CartRecommendations(
+    $productId: ID!
+    $country: CountryCode
+    $language: LanguageCode
+  ) @inContext(country: $country, language: $language) {
+    productRecommendations(productId: $productId, intent: COMPLEMENTARY) {
+      ...ProductCard
+    }
+  }
+  ${PRODUCT_CARD_FRAGMENT}
+` as const;

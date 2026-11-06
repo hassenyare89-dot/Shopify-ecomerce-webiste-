@@ -3,92 +3,67 @@ import type {Route} from './+types/collections._index';
 import {getPaginationVariables, Image} from '@shopify/hydrogen';
 import type {CollectionFragment} from 'storefrontapi.generated';
 import {PaginatedResourceSection} from '~/components/PaginatedResourceSection';
+import {Breadcrumbs} from '~/components/ui/Breadcrumbs';
+import {Icon} from '~/components/ui/Icon';
+import {canonicalUrl, seoMeta} from '~/lib/seo';
 
-export async function loader(args: Route.LoaderArgs) {
-  // Start fetching non-critical data without blocking time to first byte
-  const deferredData = loadDeferredData(args);
-
-  // Await the critical data required to render initial state of the page
-  const criticalData = await loadCriticalData(args);
-
-  return {...deferredData, ...criticalData};
-}
-
-/**
- * Load data necessary for rendering content above the fold. This is the critical data
- * needed to render the page. If it's unavailable, the whole page should 400 or 500 error.
- */
-async function loadCriticalData({context, request}: Route.LoaderArgs) {
-  const paginationVariables = getPaginationVariables(request, {
-    pageBy: 4,
+export const meta: Route.MetaFunction = ({data}) =>
+  seoMeta({
+    title: 'Collections',
+    description: 'Browse all of our collections.',
+    url: data?.canonical,
   });
 
-  const [{collections}] = await Promise.all([
-    context.storefront.query(COLLECTIONS_QUERY, {
-      variables: paginationVariables,
-    }),
-    // Add other queries here, so that they are loaded in parallel
-  ]);
-
-  return {collections};
-}
-
-/**
- * Load data for rendering content below the fold. This data is deferred and will be
- * fetched after the initial page load. If it's unavailable, the page should still 200.
- * Make sure to not throw any errors here, as it will cause the page to 500.
- */
-function loadDeferredData({context}: Route.LoaderArgs) {
-  return {};
+export async function loader({context, request}: Route.LoaderArgs) {
+  const paginationVariables = getPaginationVariables(request, {pageBy: 12});
+  const {collections} = await context.storefront.query(COLLECTIONS_QUERY, {
+    variables: paginationVariables,
+    cache: context.storefront.CacheLong(),
+  });
+  return {collections, canonical: canonicalUrl(request.url)};
 }
 
 export default function Collections() {
   const {collections} = useLoaderData<typeof loader>();
-
   return (
-    <div className="collections">
-      <h1>Collections</h1>
+    <div className="container-page py-8 md:py-12">
+      <Breadcrumbs crumbs={[{name: 'Home', path: '/'}, {name: 'Collections', path: '/collections'}]} />
+      <header className="mb-10 max-w-2xl">
+        <h1 className="text-4xl md:text-6xl">Collections</h1>
+        <p className="mt-4 text-muted">Explore curated edits from across our store.</p>
+      </header>
       <PaginatedResourceSection<CollectionFragment>
         connection={collections}
-        resourcesClassName="collections-grid"
+        as="ul"
+        resourcesClassName="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3"
       >
         {({node: collection, index}) => (
-          <CollectionItem
-            key={collection.id}
-            collection={collection}
-            index={index}
-          />
+          <li key={collection.id}>
+            <Link
+              to={`/collections/${collection.handle}`}
+              prefetch="intent"
+              className="group block"
+            >
+              <div className="relative aspect-[4/3] overflow-hidden rounded-brand bg-surface">
+                {collection.image ? (
+                  <Image
+                    data={collection.image}
+                    alt={collection.image.altText || collection.title}
+                    sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                    loading={index < 3 ? 'eager' : 'lazy'}
+                    className="h-full w-full object-cover transition duration-700 ease-out-expo group-hover:scale-105"
+                  />
+                ) : null}
+              </div>
+              <div className="mt-4 flex items-center justify-between">
+                <h2 className="text-xl">{collection.title}</h2>
+                <Icon name="arrowRight" className="size-4 transition group-hover:translate-x-1" />
+              </div>
+            </Link>
+          </li>
         )}
       </PaginatedResourceSection>
     </div>
-  );
-}
-
-function CollectionItem({
-  collection,
-  index,
-}: {
-  collection: CollectionFragment;
-  index: number;
-}) {
-  return (
-    <Link
-      className="collection-item"
-      key={collection.id}
-      to={`/collections/${collection.handle}`}
-      prefetch="intent"
-    >
-      {collection?.image && (
-        <Image
-          alt={collection.image.altText || collection.title}
-          aspectRatio="1/1"
-          data={collection.image}
-          loading={index < 3 ? 'eager' : undefined}
-          sizes="(min-width: 45em) 400px, 100vw"
-        />
-      )}
-      <h5>{collection.title}</h5>
-    </Link>
   );
 }
 

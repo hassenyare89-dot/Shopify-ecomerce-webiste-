@@ -2,13 +2,14 @@ import {Link, useLoaderData} from 'react-router';
 import type {Route} from './+types/blogs._index';
 import {getPaginationVariables} from '@shopify/hydrogen';
 import {PaginatedResourceSection} from '~/components/PaginatedResourceSection';
+import {ContentPage} from '~/components/ContentPage';
+import {Icon} from '~/components/ui/Icon';
+import {seoMeta} from '~/lib/seo';
 import type {BlogsQuery} from 'storefrontapi.generated';
 
 type BlogNode = BlogsQuery['blogs']['nodes'][0];
 
-export const meta: Route.MetaFunction = () => {
-  return [{title: `Hydrogen | Blogs`}];
-};
+export const meta: Route.MetaFunction = () => seoMeta({title: 'Journal'});
 
 export async function loader(args: Route.LoaderArgs) {
   // Start fetching non-critical data without blocking time to first byte
@@ -52,25 +53,19 @@ function loadDeferredData({context}: Route.LoaderArgs) {
 
 export default function Blogs() {
   const {blogs} = useLoaderData<typeof loader>();
-
   return (
-    <div className="blogs">
-      <h1>Blogs</h1>
-      <div className="blogs-grid">
-        <PaginatedResourceSection<BlogNode> connection={blogs}>
-          {({node: blog}) => (
-            <Link
-              className="blog"
-              key={blog.handle}
-              prefetch="intent"
-              to={`/blogs/${blog.handle}`}
-            >
-              <h2>{blog.title}</h2>
+    <ContentPage title="Journal" intro="Stories, guides and news from our team." path="/blogs">
+      <PaginatedResourceSection<BlogNode> connection={blogs} as="ul" resourcesClassName="divide-y divide-border border-y border-border">
+        {({node: blog}) => (
+          <li key={blog.handle}>
+            <Link prefetch="intent" to={`/blogs/${blog.handle}`} className="flex items-center justify-between py-5 text-xl hover:text-accent">
+              {blog.title}
+              <Icon name="arrowRight" className="size-5" />
             </Link>
-          )}
-        </PaginatedResourceSection>
-      </div>
-    </div>
+          </li>
+        )}
+      </PaginatedResourceSection>
+    </ContentPage>
   );
 }
 

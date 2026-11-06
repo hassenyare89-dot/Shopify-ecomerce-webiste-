@@ -64,6 +64,12 @@ Disallow: /*/collections/*+*
 Disallow: /*/collections/*%2B*
 Disallow: /*/collections/*%2b*
 Disallow: /*/collections/*filter*&*filter*
+Disallow: /*?*sort=*
+Disallow: /*?*cursor=*
+Disallow: /api/
+Disallow: /webhooks/
+Disallow: /wishlist
+Disallow: /discount/
 Disallow: /blogs/*+*
 Disallow: /blogs/*%2B*
 Disallow: /blogs/*%2b*

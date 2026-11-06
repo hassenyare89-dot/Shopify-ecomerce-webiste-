@@ -33,6 +33,9 @@ export const CUSTOMER_ORDER_QUERY = `#graphql
     totalDiscount {
       ...OrderMoney
     }
+    totalPrice {
+      ...OrderMoney
+    }
     image {
       altText
       height
@@ -49,9 +52,18 @@ export const CUSTOMER_ORDER_QUERY = `#graphql
     statusPageUrl
     fulfillmentStatus
     processedAt
-    fulfillments(first: 1) {
+    fulfillments(first: 10) {
       nodes {
+        id
         status
+        latestShipmentStatus
+        estimatedDeliveryAt
+        updatedAt
+        trackingInformation {
+          company
+          number
+          url
+        }
       }
     }
     totalTax {
@@ -63,6 +75,11 @@ export const CUSTOMER_ORDER_QUERY = `#graphql
     subtotal {
       ...OrderMoney
     }
+    totalShipping {
+      ...OrderMoney
+    }
+    financialStatus
+    cancelledAt
     shippingAddress {
       name
       formatted(withName: true)

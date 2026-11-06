@@ -1,23 +1,20 @@
-import type {
-  PredictiveSearchQuery,
-  RegularSearchQuery,
-} from 'storefrontapi.generated';
+import type {PredictiveSearchQuery} from 'storefrontapi.generated';
 
-type ResultWithItems<Type extends 'predictive' | 'regular', Items> = {
-  type: Type;
+export type PredictiveSearchItems = NonNullable<
+  PredictiveSearchQuery['predictiveSearch']
+>;
+
+export type PredictiveSearchReturn = {
+  type: 'predictive';
   term: string;
   error?: string;
-  result: {total: number; items: Items};
+  result: {total: number; items: PredictiveSearchItems};
 };
 
-export type RegularSearchReturn = ResultWithItems<
-  'regular',
-  RegularSearchQuery
->;
-export type PredictiveSearchReturn = ResultWithItems<
-  'predictive',
-  NonNullable<PredictiveSearchQuery['predictiveSearch']>
->;
+/** Search terms are trimmed and capped to keep queries bounded. */
+export function normalizeSearchTerm(value: string | null | undefined): string {
+  return (value ?? '').replace(/\s+/g, ' ').trim().slice(0, 100);
+}
 
 /**
  * Returns the empty state of a predictive search result to reset the search state.
@@ -68,7 +65,7 @@ export function urlWithTrackingParams({
 }: UrlWithTrackingParams) {
   let search = new URLSearchParams({
     ...extraParams,
-    q: encodeURIComponent(term),
+    q: term,
   }).toString();
 
   if (trackingParams) {

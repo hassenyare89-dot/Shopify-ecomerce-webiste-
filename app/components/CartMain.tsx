@@ -4,17 +4,24 @@ import type {CartApiQueryFragment} from 'storefrontapi.generated';
 import {useAside} from '~/components/Aside';
 import {CartLineItem, type CartLine} from '~/components/CartLineItem';
 import {CartSummary} from './CartSummary';
+import {ButtonLink} from '~/components/ui/Button';
+import {Icon} from '~/components/ui/Icon';
+import {pluralize} from '~/lib/format';
+import {cn} from '~/lib/cn';
 
 export type CartLayout = 'page' | 'aside';
 
 export type CartMainProps = {
   cart: CartApiQueryFragment | null;
   layout: CartLayout;
+  /** Rendered below the lines, e.g. recommendations. */
+  children?: React.ReactNode;
 };
 
 export type LineItemChildrenMap = {[parentId: string]: CartLine[]};
-/** Returns a map of all line items and their children. */
-function getLineItemChildrenMap(lines: CartLine[]): LineItemChildrenMap {
+
+/** Returns a map of all line items and their children (bundles, add-ons). */
+export function getLineItemChildrenMap(lines: CartLine[]): LineItemChildrenMap {
   const children: LineItemChildrenMap = {};
   for (const line of lines) {
     if ('parentRelationship' in line && line.parentRelationship?.parent) {
@@ -32,78 +39,89 @@ function getLineItemChildrenMap(lines: CartLine[]): LineItemChildrenMap {
   }
   return children;
 }
-/**
- * The main cart component that displays the cart items and summary.
- * It is used by both the /cart route and the cart aside dialog.
- */
-export function CartMain({layout, cart: originalCart}: CartMainProps) {
-  // The useOptimisticCart hook applies pending actions to the cart
-  // so the user immediately sees feedback when they modify the cart.
-  const cart = useOptimisticCart(originalCart);
 
-  const linesCount = Boolean(cart?.lines?.nodes?.length || 0);
-  const withDiscount =
-    cart &&
-    Boolean(cart?.discountCodes?.filter((code) => code.applicable)?.length);
-  const className = `cart-main ${withDiscount ? 'with-discount' : ''}`;
-  const cartHasItems = cart?.totalQuantity ? cart.totalQuantity > 0 : false;
-  const childrenMap = getLineItemChildrenMap(cart?.lines?.nodes ?? []);
+/**
+ * Cart contents shared by the /cart page and the cart drawer.
+ * All totals shown come from Shopify's calculated cart.
+ */
+export function CartMain({layout, cart: originalCart, children}: CartMainProps) {
+  // Applies pending cart actions optimistically for instant feedback.
+  const cart = useOptimisticCart(originalCart);
+  const lines = cart?.lines?.nodes ?? [];
+  const cartHasItems = (cart?.totalQuantity ?? 0) > 0;
+  const childrenMap = getLineItemChildrenMap(lines);
+
+  if (!cartHasItems) {
+    return <CartEmpty layout={layout} />;
+  }
 
   return (
     <section
-      className={className}
-      aria-label={layout === 'page' ? 'Cart page' : 'Cart drawer'}
+      aria-label={layout === 'page' ? 'Cart' : 'Cart drawer'}
+      className={cn(
+        layout === 'page'
+          ? 'grid gap-10 lg:grid-cols-[1fr_400px] lg:gap-16'
+          : 'flex h-full flex-col',
+      )}
     >
-      <CartEmpty hidden={linesCount} layout={layout} />
-      <div className="cart-details">
-        <p id="cart-lines" className="sr-only">
-          Line items
+      <div className={cn(layout === 'aside' && 'flex-1 px-5')}>
+        <p className="sr-only" id={`cart-lines-${layout}`}>
+          {pluralize(cart?.totalQuantity ?? 0, 'item')} in your cart
         </p>
-        <div>
-          <ul aria-labelledby="cart-lines">
-            {(cart?.lines?.nodes ?? []).map((line) => {
-              // we do not render non-parent lines at the root of the cart
-              if (
-                'parentRelationship' in line &&
-                line.parentRelationship?.parent
-              ) {
-                return null;
-              }
-              return (
-                <CartLineItem
-                  key={line.id}
-                  line={line}
-                  layout={layout}
-                  childrenMap={childrenMap}
-                />
-              );
-            })}
-          </ul>
-        </div>
-        {cartHasItems && <CartSummary cart={cart} layout={layout} />}
+        <ul aria-labelledby={`cart-lines-${layout}`} className="divide-y divide-border">
+          {lines.map((line) => {
+            // Child lines are rendered nested under their parent.
+            if ('parentRelationship' in line && line.parentRelationship?.parent) {
+              return null;
+            }
+            return (
+              <CartLineItem
+                key={line.id}
+                line={line}
+                layout={layout}
+                childrenMap={childrenMap}
+              />
+            );
+          })}
+        </ul>
+        {children}
       </div>
+      <CartSummary cart={cart} layout={layout} />
     </section>
   );
 }
 
-function CartEmpty({
-  hidden = false,
-}: {
-  hidden: boolean;
-  layout?: CartMainProps['layout'];
-}) {
+function CartEmpty({layout}: {layout: CartLayout}) {
   const {close} = useAside();
   return (
-    <div hidden={hidden}>
-      <br />
-      <p>
-        Looks like you haven&rsquo;t added anything yet, let&rsquo;s get you
-        started!
-      </p>
-      <br />
-      <Link to="/collections" onClick={close} prefetch="viewport">
-        Continue shopping →
-      </Link>
+    <div
+      className={cn(
+        'flex flex-col items-center justify-center gap-5 text-center',
+        layout === 'aside' ? 'h-full px-8 py-16' : 'py-20',
+      )}
+    >
+      <span className="inline-flex size-16 items-center justify-center rounded-full bg-surface">
+        <Icon name="bag" className="size-7" />
+      </span>
+      <div>
+        <p className="font-heading text-2xl">Your cart is empty</p>
+        <p className="mt-2 text-sm text-muted">
+          Looks like you haven&rsquo;t added anything yet.
+        </p>
+      </div>
+      <div className="flex flex-wrap justify-center gap-3">
+        <ButtonLink to="/collections/all" onClick={close} prefetch="viewport">
+          Start shopping
+        </ButtonLink>
+        <ButtonLink to="/new-arrivals" onClick={close} variant="outline">
+          New arrivals
+        </ButtonLink>
+      </div>
+      {layout === 'page' ? (
+        <Link to="/wishlist" className="text-sm underline underline-offset-4">
+          View your wishlist
+        </Link>
+      ) : null}
     </div>
   );
 }

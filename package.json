@@ -5,12 +5,19 @@
   "version": "2026.4.9",
   "type": "module",
   "scripts": {
-    "build": "shopify hydrogen build --codegen",
     "dev": "shopify hydrogen dev --codegen",
+    "dev:mock": "concurrently -k -n mock,app \"npm:mock:api\" \"shopify hydrogen dev --codegen --env-file mock/mock.env --port 3000\"",
+    "mock:api": "node mock/storefront-server.mjs",
+    "build": "shopify hydrogen build --codegen",
     "preview": "shopify hydrogen preview --build",
+    "preview:mock": "shopify hydrogen preview --env-file mock/mock.env --port 3000",
     "lint": "eslint --no-error-on-unmatched-pattern .",
     "typecheck": "react-router typegen && tsc --noEmit",
-    "codegen": "shopify hydrogen codegen && react-router typegen"
+    "codegen": "shopify hydrogen codegen && react-router typegen",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test --trace off",
+    "check": "npm run typecheck && npm run lint && npm test"
   },
   "prettier": "@shopify/prettier-config",
   "dependencies": {
@@ -48,6 +55,7 @@
     "@types/three": "^0.183.1",
     "@typescript-eslint/eslint-plugin": "^8.21.0",
     "@typescript-eslint/parser": "^8.21.0",
+    "concurrently": "^9.2.5",
     "eslint": "^9.18.0",
     "eslint-config-prettier": "^10.0.1",
     "eslint-import-resolver-typescript": "^3.7.0",

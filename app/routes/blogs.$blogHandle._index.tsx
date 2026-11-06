@@ -3,11 +3,13 @@ import type {Route} from './+types/blogs.$blogHandle._index';
 import {Image, getPaginationVariables} from '@shopify/hydrogen';
 import type {ArticleItemFragment} from 'storefrontapi.generated';
 import {PaginatedResourceSection} from '~/components/PaginatedResourceSection';
+import {Breadcrumbs} from '~/components/ui/Breadcrumbs';
+import {formatDate} from '~/lib/format';
+import {seoMeta} from '~/lib/seo';
 import {redirectIfHandleIsLocalized} from '~/lib/redirect';
 
-export const meta: Route.MetaFunction = ({data}) => {
-  return [{title: `Hydrogen | ${data?.blog.title ?? ''} blog`}];
-};
+export const meta: Route.MetaFunction = ({data}) =>
+  seoMeta({title: data?.blog.seo?.title ?? data?.blog.title ?? 'Journal', description: data?.blog.seo?.description});
 
 export async function loader(args: Route.LoaderArgs) {
   // Start fetching non-critical data without blocking time to first byte
@@ -65,53 +67,45 @@ export default function Blog() {
   const {articles} = blog;
 
   return (
-    <div className="blog">
-      <h1>{blog.title}</h1>
-      <div className="blog-grid">
-        <PaginatedResourceSection<ArticleItemFragment> connection={articles}>
-          {({node: article, index}) => (
-            <ArticleItem
-              article={article}
-              key={article.id}
-              loading={index < 2 ? 'eager' : 'lazy'}
-            />
-          )}
-        </PaginatedResourceSection>
-      </div>
+    <div className="container-page py-8 md:py-12">
+      <Breadcrumbs crumbs={[{name: 'Home', path: '/'}, {name: 'Journal', path: '/blogs'}, {name: blog.title, path: `/blogs/${blog.handle}`}]} />
+      <header className="mb-12 max-w-2xl">
+        <p className="eyebrow mb-2">Journal</p>
+        <h1 className="text-4xl md:text-6xl">{blog.title}</h1>
+      </header>
+      <PaginatedResourceSection<ArticleItemFragment>
+        connection={articles}
+        as="ul"
+        resourcesClassName="grid gap-x-6 gap-y-12 sm:grid-cols-2 lg:grid-cols-3"
+      >
+        {({node: article, index}) => (
+          <ArticleItem article={article} key={article.id} loading={index < 3 ? 'eager' : 'lazy'} />
+        )}
+      </PaginatedResourceSection>
     </div>
   );
 }
 
-function ArticleItem({
-  article,
-  loading,
-}: {
-  article: ArticleItemFragment;
-  loading?: HTMLImageElement['loading'];
-}) {
-  const publishedAt = new Intl.DateTimeFormat('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  }).format(new Date(article.publishedAt!));
+function ArticleItem({article, loading}: {article: ArticleItemFragment; loading?: HTMLImageElement['loading']}) {
   return (
-    <div className="blog-article" key={article.id}>
-      <Link to={`/blogs/${article.blog.handle}/${article.handle}`}>
-        {article.image && (
-          <div className="blog-article-image">
+    <li>
+      <Link to={`/blogs/${article.blog.handle}/${article.handle}`} className="group block" prefetch="intent">
+        <div className="aspect-[3/2] overflow-hidden rounded-brand bg-surface">
+          {article.image ? (
             <Image
               alt={article.image.altText || article.title}
               aspectRatio="3/2"
               data={article.image}
               loading={loading}
-              sizes="(min-width: 768px) 50vw, 100vw"
+              sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+              className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
             />
-          </div>
-        )}
-        <h3>{article.title}</h3>
-        <small>{publishedAt}</small>
+          ) : null}
+        </div>
+        <p className="mt-4 text-xs text-muted">{formatDate(article.publishedAt!, {style: 'long'})}</p>
+        <h2 className="mt-1 text-xl group-hover:underline underline-offset-4">{article.title}</h2>
       </Link>
-    </div>
+    </li>
   );
 }
 

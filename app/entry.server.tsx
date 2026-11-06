@@ -6,6 +6,7 @@ import {
   type HydrogenRouterContextProvider,
 } from '@shopify/hydrogen';
 import type {EntryContext} from 'react-router';
+import {buildCspDirectives} from '~/lib/csp';
 
 export default async function handleRequest(
   request: Request,
@@ -19,6 +20,9 @@ export default async function handleRequest(
       checkoutDomain: context.env.PUBLIC_CHECKOUT_DOMAIN,
       storeDomain: context.env.PUBLIC_STORE_DOMAIN,
     },
+    ...buildCspDirectives(context.env, {
+      isProduction: process.env.NODE_ENV === 'production',
+    }),
   });
 
   const body = await renderToReadableStream(
