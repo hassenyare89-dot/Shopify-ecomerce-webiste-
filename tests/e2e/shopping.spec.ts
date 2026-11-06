@@ -4,7 +4,7 @@
  * checkout handoff. (A real Shopify test-mode purchase must be done manually
  * against a development store — see docs/TESTING.md.)
  */
-import {expect, test} from '@playwright/test';
+import {expect, test} from './fixtures';
 import {AxeBuilder} from '@axe-core/playwright';
 
 test.describe.configure({mode: 'serial'});
