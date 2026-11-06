@@ -61,6 +61,12 @@ describe('text helpers', () => {
   it('strips html', () => {
     expect(stripHtml('<p>Hello <b>world</b>&nbsp;&amp; co</p><script>x()</script>')).toBe('Hello world & co');
   });
+  it('strips script/style blocks with whitespace in end tags', () => {
+    expect(stripHtml('a<script>x()</script >b<style>p{}</style\n>c')).toBe('a b c');
+  });
+  it('does not double-unescape entities', () => {
+    expect(stripHtml('&amp;lt;b&amp;gt;')).toBe('&lt;b&gt;');
+  });
   it('truncates at word boundaries', () => {
     expect(truncate('The quick brown fox jumps', 15)).toBe('The quick…');
     expect(truncate('short', 15)).toBe('short');

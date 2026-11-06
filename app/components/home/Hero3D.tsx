@@ -43,7 +43,9 @@ export function shouldEnable3D(win: Window = window): boolean {
 function textureUrl(url: string) {
   try {
     const u = new URL(url);
-    if (u.hostname.endsWith('shopify.com')) u.searchParams.set('width', '800');
+    if (u.hostname === 'cdn.shopify.com' || u.hostname.endsWith('.shopify.com')) {
+      u.searchParams.set('width', '800');
+    }
     return u.toString();
   } catch {
     return url;

@@ -3,7 +3,8 @@ import {startTransition, StrictMode} from 'react';
 import {hydrateRoot} from 'react-dom/client';
 import {NonceProvider} from '@shopify/hydrogen';
 
-if (!window.location.origin.includes('webcache.googleusercontent.com')) {
+// Skip hydration on Google's cached copy of the page (exact host match).
+if (window.location.hostname !== 'webcache.googleusercontent.com') {
   startTransition(() => {
     // Extract nonce from existing script tags
     const existingNonce =
