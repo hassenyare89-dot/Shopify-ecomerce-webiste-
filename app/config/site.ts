@@ -353,8 +353,8 @@ export const siteConfig = {
      */
     templatesReviewed: false,
     lastUpdated: '2026-11-06',
-    /** Legal entity name for the copyright line (e.g. "Himilomart LLC"). */
-    businessName: 'Himilomart',
+    /** Legal entity name (footer copyright, legal page templates). */
+    businessName: 'Himilomart LLC',
   },
 } as const;
 
