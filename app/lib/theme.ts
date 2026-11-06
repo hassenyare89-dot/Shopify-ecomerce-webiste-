@@ -58,6 +58,8 @@ export function themeInitScript(theme = siteConfig.theme): string {
   if (!theme.enableDarkMode) {
     return `document.documentElement.dataset.theme='light';`;
   }
-  const fallback = JSON.stringify(theme.defaultMode);
+  // Only known literals are ever embedded in the inline script.
+  const fallback =
+    theme.defaultMode === 'light' ? "'light'" : theme.defaultMode === 'dark' ? "'dark'" : "'system'";
   return `(function(){try{var d=document.documentElement,s=localStorage.getItem('theme'),m=s==='light'||s==='dark'?s:${fallback};if(m==='system'){m=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'}d.dataset.theme=m}catch(e){}})();`;
 }

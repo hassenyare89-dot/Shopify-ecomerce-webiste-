@@ -661,8 +661,9 @@ const server = http.createServer(async (req, res) => {
       res.writeHead(200, {'Content-Type': 'application/json'});
       return res.end(JSON.stringify(result));
     } catch (error) {
+      console.error('[mock-storefront] bad request:', error);
       res.writeHead(400, {'Content-Type': 'application/json'});
-      return res.end(JSON.stringify({errors: [{message: String(error?.message ?? error)}]}));
+      return res.end(JSON.stringify({errors: [{message: 'Invalid GraphQL request'}]}));
     }
   }
 

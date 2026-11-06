@@ -110,6 +110,11 @@ describe('theme', () => {
   it('init script respects saved choice', () => {
     expect(themeInitScript()).toContain("localStorage.getItem('theme')");
   });
+  it('init script only embeds known default modes', () => {
+    const script = themeInitScript({enableDarkMode: true, defaultMode: '</script><script>alert(1)'} as never);
+    expect(script).not.toContain('alert');
+    expect(script).toContain("'system'");
+  });
 });
 
 describe('CSP', () => {
