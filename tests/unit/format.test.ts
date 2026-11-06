@@ -63,6 +63,7 @@ describe('text helpers', () => {
   });
   it('strips script/style blocks with whitespace in end tags', () => {
     expect(stripHtml('a<script>x()</script >b<style>p{}</style\n>c')).toBe('a b c');
+    expect(stripHtml('a<script>x()</script\t\n bar>b')).toBe('a b');
   });
   it('does not double-unescape entities', () => {
     expect(stripHtml('&amp;lt;b&amp;gt;')).toBe('&lt;b&gt;');

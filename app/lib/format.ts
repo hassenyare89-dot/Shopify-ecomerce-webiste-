@@ -96,8 +96,8 @@ export function pluralize(count: number, singular: string, plural?: string) {
 export function stripHtml(html: string | null | undefined): string {
   if (!html) return '';
   return html
-    .replace(/<style\b[\s\S]*?<\/style\s*>/gi, ' ')
-    .replace(/<script\b[\s\S]*?<\/script\s*>/gi, ' ')
+    .replace(/<style\b[\s\S]*?<\/style[^>]*>/gi, ' ')
+    .replace(/<script\b[\s\S]*?<\/script[^>]*>/gi, ' ')
     .replace(/<[^>]+>/g, ' ')
     .replace(/&nbsp;/g, ' ')
     .replace(/&quot;/g, '"')
