@@ -39,6 +39,7 @@ export function buildThemeCss(theme = siteConfig.theme): string {
     SAFE_CSS_VALUE.test(fonts.heading) ? `--brand-font-heading:${fonts.heading};` : '',
     SAFE_CSS_VALUE.test(fonts.body) ? `--brand-font-body:${fonts.body};` : '',
     SAFE_CSS_VALUE.test(radius) ? `--brand-radius:${radius};` : '',
+    SAFE_CSS_VALUE.test(theme.heroBackground) ? `--brand-hero:${theme.heroBackground};` : '',
   ].join('');
   const light = declarations(theme.light);
   const dark = declarations(theme.dark);

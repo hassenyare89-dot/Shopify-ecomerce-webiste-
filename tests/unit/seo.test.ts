@@ -26,7 +26,7 @@ describe('seoMeta', () => {
       image: {url: 'https://cdn.shopify.com/a.jpg', altText: 'A shirt', width: 800, height: 1000},
       jsonLd: {'@type': 'Thing'},
     });
-    expect(meta).toContainEqual({title: 'Shirt | Store Name'});
+    expect(meta).toContainEqual({title: 'Shirt | Himilomart'});
     expect(meta).toContainEqual({name: 'description', content: 'Soft linen'});
     expect(meta).toContainEqual({tagName: 'link', rel: 'canonical', href: 'https://shop.example/products/shirt'});
     expect(meta).toContainEqual({property: 'og:image', content: 'https://cdn.shopify.com/a.jpg'});

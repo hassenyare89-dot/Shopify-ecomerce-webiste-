@@ -44,7 +44,7 @@ export function HeroSection({
   return (
     <section
       aria-labelledby="hero-heading"
-      className="relative isolate overflow-hidden bg-[#141311] text-white"
+      className="relative isolate overflow-hidden bg-[var(--brand-hero)] text-white"
     >
       {slide.image ? (
         <Image
@@ -58,7 +58,7 @@ export function HeroSection({
       ) : (
         <div
           aria-hidden
-          className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_70%_40%,rgb(180_83_42/0.45),transparent_55%),radial-gradient(ellipse_at_20%_80%,rgb(255_255_255/0.08),transparent_50%)]"
+          className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_70%_40%,color-mix(in_oklab,var(--brand-accent)_45%,transparent),transparent_55%),radial-gradient(ellipse_at_20%_80%,rgb(255_255_255/0.08),transparent_50%)]"
         />
       )}
       <div
@@ -85,7 +85,7 @@ export function HeroSection({
               to={slide.ctaUrl ?? siteConfig.hero.primaryCta.to}
               size="lg"
               variant="secondary"
-              className="bg-white text-[#141311] hover:bg-white/90"
+              className="bg-white text-[var(--brand-hero)] hover:bg-white/90"
             >
               {slide.ctaLabel ?? siteConfig.hero.primaryCta.label}
               <Icon name="arrowRight" className="size-4" />
@@ -355,7 +355,7 @@ export function PromoBannersSection({banners}: {banners: PromoBanner[]}) {
                   <ButtonLink
                     to={banner.ctaUrl}
                     variant="secondary"
-                    className="mt-5 bg-white text-[#141311] hover:bg-white/90"
+                    className="mt-5 bg-white text-[var(--brand-hero)] hover:bg-white/90"
                   >
                     {banner.ctaLabel ?? 'Shop now'}
                   </ButtonLink>
