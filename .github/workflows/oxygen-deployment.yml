@@ -1,0 +1,45 @@
+# Deploys to Shopify Oxygen.
+#
+# Setup (see docs/DEPLOYMENT.md):
+#  1. In Shopify admin → Hydrogen → your storefront → Storefront settings →
+#     Oxygen deployments → create a deployment token.
+#  2. Add it as the GitHub secret OXYGEN_DEPLOYMENT_TOKEN_<STOREFRONT_ID>
+#     (or rename the reference below). If you connect the repo from Shopify
+#     admin, Shopify generates an equivalent workflow — keep only one.
+#  3. Create a GitHub environment "production" with required reviewers so
+#     production deploys need explicit approval.
+#
+# Pull requests and non-main branches get preview deployments (environment
+# mapped by branch in Oxygen); main deploys to production after approval.
+name: Oxygen deployment
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  deployments: write
+
+jobs:
+  deploy:
+    name: Deploy to Oxygen
+    # Skip until the deployment token secret is configured.
+    if: ${{ vars.OXYGEN_ENABLED == 'true' }}
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'preview' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - name: Build and publish to Oxygen
+        run: npx shopify hydrogen deploy
+        env:
+          SHOPIFY_HYDROGEN_DEPLOYMENT_TOKEN: ${{ secrets.OXYGEN_DEPLOYMENT_TOKEN }}
