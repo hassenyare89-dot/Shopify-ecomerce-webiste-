@@ -671,5 +671,6 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(PORT, '127.0.0.1', () => {
+  // eslint-disable-next-line no-console
   console.log(`[mock-storefront] MOCK Storefront API on ${MOCK_ORIGIN} (${PRODUCTS.length} sample products) — not for production`);
 });

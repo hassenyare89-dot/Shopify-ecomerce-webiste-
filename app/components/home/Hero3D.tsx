@@ -70,7 +70,7 @@ export function Hero3D({images, className, onReady}: Hero3DProps) {
       (window as Window & {requestIdleCallback?: (cb: () => void) => number}).requestIdleCallback ??
       ((cb: () => void) => window.setTimeout(cb, 300));
 
-    idle(async () => {
+    const run = async () => {
       const THREE = await import('three');
       if (disposed) return;
 
@@ -214,6 +214,9 @@ export function Hero3D({images, className, onReady}: Hero3DProps) {
         renderer.dispose();
         renderer.domElement.remove();
       };
+    };
+    idle(() => {
+      void run();
     });
 
     return () => {

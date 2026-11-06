@@ -142,7 +142,7 @@ export default function Product() {
         ]}
       />
 
-      <div className="grid gap-10 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] lg:gap-16">
+      <div className="grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] lg:gap-16">
         <ProductGallery
           media={product.media.nodes}
           selectedImageUrl={selectedVariant?.image?.url}

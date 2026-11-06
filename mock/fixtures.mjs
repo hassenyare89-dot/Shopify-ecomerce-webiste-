@@ -125,7 +125,7 @@ function buildProduct(bp, index) {
     image(`${bp.handle}-3|${palette[0]}|${palette[1]}|alt`, `${bp.title} — lifestyle`),
   ];
   const colorImages = Object.fromEntries(
-    bp.colors.map((c, i) => [c, image(`${bp.handle}-${c}|${COLORS[c]}|${palette[1]}`, `${bp.title} in ${c}`)]),
+    bp.colors.map((c) => [c, image(`${bp.handle}-${c}|${COLORS[c]}|${palette[1]}`, `${bp.title} in ${c}`)]),
   );
 
   // Build variant combinations (cartesian product).

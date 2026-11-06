@@ -231,12 +231,19 @@ export default [
     plugins: {
       jest,
     },
+    // Tests use Vitest (Jest-compatible API); tell the jest plugin which version to assume.
+    settings: {jest: {version: 29}},
     languageOptions: {
       globals: {
         ...globals.node,
         ...globals.jest,
       },
     },
+  },
+  {
+    // Mock server & fixtures are plain Node ESM scripts (dev/test only).
+    files: ['mock/**/*.mjs', '*.config.ts'],
+    languageOptions: {globals: {...globals.node}},
   },
   {
     files: ['**/*.server.*'],

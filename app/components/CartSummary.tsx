@@ -126,19 +126,17 @@ function CartCheckoutActions({
   return (
     <div className="mt-5 space-y-3">
       {/* Full-page navigation to Shopify-hosted checkout. */}
-      <a
-        href={disabled ? undefined : checkoutUrl}
-        aria-disabled={disabled || undefined}
-        className={buttonClasses({
-          size: 'lg',
-          fullWidth: true,
-          className: disabled ? 'pointer-events-none opacity-50' : '',
-        })}
-        data-testid="checkout-button"
-      >
-        <Icon name="lock" className="size-4" />
-        Checkout
-      </a>
+      {disabled ? (
+        <button type="button" disabled className={buttonClasses({size: 'lg', fullWidth: true})} data-testid="checkout-button">
+          <Icon name="lock" className="size-4" />
+          Checkout
+        </button>
+      ) : (
+        <a href={checkoutUrl} className={buttonClasses({size: 'lg', fullWidth: true})} data-testid="checkout-button">
+          <Icon name="lock" className="size-4" />
+          Checkout
+        </a>
+      )}
       {layout === 'aside' ? (
         <Link
           to="/cart"

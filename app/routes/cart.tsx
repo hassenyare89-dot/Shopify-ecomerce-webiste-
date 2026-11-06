@@ -1,5 +1,5 @@
 import {Suspense} from 'react';
-import {Await, useLoaderData, data, type HeadersFunction} from 'react-router';
+import {Await, useLoaderData, data, redirect, type HeadersFunction} from 'react-router';
 import type {Route} from './+types/cart';
 import type {CartQueryDataReturn} from '@shopify/hydrogen';
 import {CartForm, Analytics} from '@shopify/hydrogen';
@@ -27,7 +27,7 @@ export async function action({request, context}: Route.ActionArgs) {
     return data({errors: [{message: 'No cart action provided'}]}, {status: 400});
   }
 
-  let status = 200;
+  const status = 200;
   let result: CartQueryDataReturn;
 
   switch (action) {
@@ -83,11 +83,11 @@ export async function action({request, context}: Route.ActionArgs) {
     inputs.buyNow === '1' &&
     !errors?.length &&
     !userErrors?.length &&
-    typeof checkoutUrl === 'string' &&
-    checkoutUrl.startsWith('https://')
+    isAllowedCheckoutUrl(checkoutUrl)
   ) {
-    status = 303;
-    headers.set('Location', checkoutUrl);
+    // A real redirect Response so React Router performs a full-page
+    // navigation to Shopify's (cross-origin) hosted checkout.
+    return redirect(checkoutUrl, {status: 303, headers});
   }
 
   return data(
@@ -100,6 +100,18 @@ export async function action({request, context}: Route.ActionArgs) {
     },
     {status, headers},
   );
+}
+
+/** Shopify checkout URLs are HTTPS; plain HTTP is only allowed for the local mock API. */
+export function isAllowedCheckoutUrl(value: unknown): value is string {
+  if (typeof value !== 'string') return false;
+  try {
+    const url = new URL(value);
+    if (url.protocol === 'https:') return true;
+    return url.protocol === 'http:' && ['127.0.0.1', 'localhost'].includes(url.hostname);
+  } catch {
+    return false;
+  }
 }
 
 export async function loader({context}: Route.LoaderArgs) {

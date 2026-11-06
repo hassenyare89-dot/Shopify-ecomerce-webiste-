@@ -202,6 +202,8 @@ export function ProductForm({
           showSticky ? 'translate-y-0' : 'translate-y-full',
         )}
         aria-hidden={!showSticky}
+        data-testid="sticky-atc"
+        {...(showSticky ? {} : {inert: ''})}
       >
         <div className="flex items-center gap-3">
           <div className="min-w-0 flex-1">
@@ -276,18 +278,14 @@ function ShareButton({title}: {title: string}) {
     <button
       type="button"
       className="inline-flex w-fit items-center gap-2 text-sm text-muted hover:text-foreground"
-      onClick={async () => {
+      onClick={() => {
         const url = window.location.href;
-        try {
-          if (navigator.share) {
-            await navigator.share({title, url});
-          } else {
-            await navigator.clipboard.writeText(url);
-            toast('Link copied to clipboard', {tone: 'info'});
-          }
-        } catch {
-          // user cancelled share sheet
-        }
+        const share = navigator.share
+          ? navigator.share({title, url})
+          : navigator.clipboard.writeText(url).then(() => toast('Link copied to clipboard', {tone: 'info'}));
+        share.catch(() => {
+          // user cancelled the share sheet or clipboard is unavailable
+        });
       }}
     >
       <Icon name="share" className="size-4" /> Share

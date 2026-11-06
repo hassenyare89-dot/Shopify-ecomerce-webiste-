@@ -52,7 +52,7 @@ export function ProductGallery({
   }
 
   return (
-    <div className="flex flex-col-reverse gap-4 lg:flex-row" aria-roledescription="carousel" aria-label={`${title} media`}>
+    <div className="flex min-w-0 flex-col-reverse gap-4 lg:flex-row" aria-roledescription="carousel" aria-label={`${title} media`}>
       {media.length > 1 ? (
         <ul className="scrollbar-none flex gap-2 overflow-x-auto lg:max-h-[42rem] lg:w-20 lg:shrink-0 lg:flex-col lg:overflow-y-auto">
           {media.map((item, i) => (

@@ -114,7 +114,7 @@ export function truncate(text: string, max: number): string {
   if (text.length <= max) return text;
   const cut = text.slice(0, max - 1);
   const lastSpace = cut.lastIndexOf(' ');
-  return `${(lastSpace > max * 0.6 ? cut.slice(0, lastSpace) : cut).trimEnd()}…`;
+  return `${(lastSpace > max * 0.5 ? cut.slice(0, lastSpace) : cut).trimEnd()}…`;
 }
 
 /** Inventory messaging that never invents stock levels. */

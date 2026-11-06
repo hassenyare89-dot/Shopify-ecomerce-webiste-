@@ -84,11 +84,6 @@ export function canonicalUrl(requestUrl: string, pathname?: string): string {
   return `${url.origin}${normalized}`;
 }
 
-/** Strips tracking/variant/sort params so filtered pages don't create duplicate canonical URLs. */
-export function canonicalWithPage(requestUrl: string): string {
-  return canonicalUrl(requestUrl);
-}
-
 interface JsonLdVariant {
   id: string;
   sku?: string | null;

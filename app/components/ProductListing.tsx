@@ -195,8 +195,8 @@ function SortSelect({options, value}: {options: {value: SortParam; label: string
   );
   return (
     <Form method="get" className="flex items-center gap-2" preventScrollReset>
-      {hidden.map(([k, v], i) => (
-        <input key={`${k}-${i}`} type="hidden" name={k} value={v} />
+      {hidden.map(([k, v]) => (
+        <input key={`${k}=${v}`} type="hidden" name={k} value={v} />
       ))}
       <label htmlFor={id} className="text-sm text-muted">
         Sort by

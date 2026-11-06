@@ -1,4 +1,4 @@
-import {Await} from 'react-router';
+import {Await, Link} from 'react-router';
 import {Suspense} from 'react';
 import type {
   CartApiQueryFragment,
@@ -17,7 +17,6 @@ import {Skeleton} from '~/components/ui/primitives';
 import {Icon} from '~/components/ui/Icon';
 import {buildNavigation, type NavItem} from '~/lib/menu';
 import {siteConfig} from '~/config/site';
-import {Link} from 'react-router';
 
 interface PageLayoutProps {
   cart: Promise<CartApiQueryFragment | null>;

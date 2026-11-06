@@ -33,6 +33,7 @@ function write(level: Level, event: string, fields: Record<string, unknown> = {}
   const entry = JSON.stringify({level, event, time: new Date().toISOString(), ...redact(fields)});
   if (level === 'error') console.error(entry);
   else if (level === 'warn') console.warn(entry);
+  // eslint-disable-next-line no-console -- structured info logs are intentional
   else console.log(entry);
 }
 
