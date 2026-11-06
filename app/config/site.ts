@@ -48,7 +48,7 @@ export interface FaqItem {
 export const siteConfig = {
   /** Displayed store name. Replace with your brand name. */
   name: 'Himilomart',
-  tagline: 'Considered goods, made to last.',
+  tagline: 'Your everyday market, thoughtfully curated.',
   description:
     'Shop thoughtfully designed products with secure checkout powered by Shopify.',
 
