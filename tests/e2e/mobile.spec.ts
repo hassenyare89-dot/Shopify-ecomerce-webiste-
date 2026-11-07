@@ -1,4 +1,4 @@
-import {expect, test} from '@playwright/test';
+import {expect, test} from './fixtures';
 
 test('mobile menu drawer navigates', async ({page}) => {
   await page.goto('/');

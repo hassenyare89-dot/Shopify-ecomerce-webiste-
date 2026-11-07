@@ -91,7 +91,7 @@ describe('theme', () => {
   it('emits brand tokens for light and dark', () => {
     const css = buildThemeCss();
     expect(css).toContain(':root{');
-    expect(css).toContain('--brand-primary:#111111;');
+    expect(css).toContain('--brand-primary:#1F3D2B;');
     expect(css).toContain(':root[data-theme="dark"]{');
   });
   it('rejects unsafe CSS values', () => {

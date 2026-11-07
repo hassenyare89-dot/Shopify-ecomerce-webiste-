@@ -47,8 +47,8 @@ export interface FaqItem {
 
 export const siteConfig = {
   /** Displayed store name. Replace with your brand name. */
-  name: 'Store Name',
-  tagline: 'Considered goods, made to last.',
+  name: 'Himilomart',
+  tagline: 'Your everyday market, thoughtfully curated.',
   description:
     'Shop thoughtfully designed products with secure checkout powered by Shopify.',
 
@@ -58,7 +58,7 @@ export const siteConfig = {
    */
   logo: {
     src: null as string | null,
-    alt: 'Store Name',
+    alt: 'Himilomart',
     width: 132,
     height: 32,
   },
@@ -69,36 +69,40 @@ export const siteConfig = {
    * Keep text/background combinations at WCAG AA contrast (4.5:1).
    */
   theme: {
+    // Forest green & cream. Every text/background pairing below meets WCAG AA
+    // (4.5:1); e.g. cream on forest green 11.3:1, brass accent on cream 5.2:1.
     light: {
-      primary: '#111111',
-      primaryForeground: '#ffffff',
-      secondary: '#f4f1ec',
-      secondaryForeground: '#1d1b18',
-      accent: '#b4532a',
-      accentForeground: '#ffffff',
-      background: '#ffffff',
-      foreground: '#111111',
-      muted: '#6b6760',
-      border: '#e7e3dc',
-      surface: '#faf8f5',
-      sale: '#b42318',
-      success: '#067647',
+      primary: '#1F3D2B',
+      primaryForeground: '#FBF8F1',
+      secondary: '#EDE6D6',
+      secondaryForeground: '#1F3D2B',
+      accent: '#8C5F27',
+      accentForeground: '#FFFFFF',
+      background: '#FBF8F1',
+      foreground: '#18211C',
+      muted: '#5B6660',
+      border: '#E3DCCB',
+      surface: '#F4EFE3',
+      sale: '#B42318',
+      success: '#2F6B46',
     },
     dark: {
-      primary: '#f5f3ef',
-      primaryForeground: '#111111',
-      secondary: '#1f1d1a',
-      secondaryForeground: '#f5f3ef',
-      accent: '#e07a4f',
-      accentForeground: '#111111',
-      background: '#0d0d0c',
-      foreground: '#f5f3ef',
-      muted: '#a8a39a',
-      border: '#2b2925',
-      surface: '#161513',
-      sale: '#f97066',
-      success: '#47cd89',
+      primary: '#EDE6D6',
+      primaryForeground: '#15241B',
+      secondary: '#1C2A21',
+      secondaryForeground: '#EDE6D6',
+      accent: '#D4A866',
+      accentForeground: '#15241B',
+      background: '#0F1712',
+      foreground: '#F1ECDF',
+      muted: '#A3ADA6',
+      border: '#2A3A30',
+      surface: '#16211A',
+      sale: '#F97066',
+      success: '#6FCF97',
     },
+    /** Dark, image-free hero backdrop (white text sits on it; keep it dark). */
+    heroBackground: '#13281C',
     /** 'system' follows the OS setting until the shopper picks one. */
     defaultMode: 'system' as 'light' | 'dark' | 'system',
     /** Set false to hide the theme toggle and always use light mode. */
@@ -304,7 +308,7 @@ export const siteConfig = {
   },
 
   contact: {
-    email: 'support@example.com',
+    email: 'support@hotmailmart.com',
     phone: null as string | null,
     hours: 'Mon–Fri, 9am–5pm ET',
     address: null as string | null,
@@ -349,7 +353,8 @@ export const siteConfig = {
      */
     templatesReviewed: false,
     lastUpdated: '2026-11-06',
-    businessName: 'Store Name LLC',
+    /** Legal entity name (footer copyright, legal page templates). */
+    businessName: 'Himilomart LLC',
   },
 } as const;
 
