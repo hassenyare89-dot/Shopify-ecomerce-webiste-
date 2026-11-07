@@ -308,7 +308,7 @@ export const siteConfig = {
   },
 
   contact: {
-    email: 'support@hotmailmart.com',
+    email: 'support@himilomart.com',
     phone: null as string | null,
     hours: 'Mon–Fri, 9am–5pm ET',
     address: null as string | null,
