@@ -46,8 +46,10 @@ Then open http://localhost:3000. `dev:mock` starts two processes:
 ## Connect your real store
 
 ```bash
-cp .env.example .env
+npm run setup:env
 ```
+
+`setup:env` creates `.env` from `.env.example` and generates a secure `SESSION_SECRET` without displaying it. It keeps any values you already have and lists the Shopify credentials that are still missing. It works on Windows, macOS and Linux.
 
 ```bash
 npx shopify hydrogen link
@@ -62,6 +64,32 @@ npm run dev
 ```
 
 Full step-by-step instructions, including required scopes and Customer Account API setup: **[docs/SHOPIFY_SETUP.md](docs/SHOPIFY_SETUP.md)**.
+
+### Windows (PowerShell)
+
+```powershell
+cd C:\path\to\Shopify-ecomerce-webiste-
+npm install
+npm run setup:env
+npx shopify hydrogen link
+npx shopify hydrogen env pull
+npm run dev
+```
+
+To preview without credentials, run `npm run dev:mock` instead of the last three commands.
+
+### Troubleshooting
+
+| Symptom | Cause and fix |
+| --- | --- |
+| `SESSION_SECRET environment variable is not set` (HTTP 500) | There's no `.env` file. A ZIP download or fresh clone never includes one, because `.env` holds secrets and is git-ignored. Run `npm run setup:env` |
+| `PUBLIC_STORE_DOMAIN environment variable is not set` | Store credentials are missing. Run `npx shopify hydrogen link`, then `npx shopify hydrogen env pull`, or use `npm run dev:mock` |
+| `'shopify' is not recognized…` | Dependencies aren't installed. Run `npm install` (the Shopify CLI is a project dependency) |
+| `npm error Missing script: "install"` | Use `npm install`, not `npm run install` |
+| `npm warn ERESOLVE overriding peer dependency` | Expected. React Router and esbuild are pinned to patched versions through `overrides` (see [docs/SECURITY.md](docs/SECURITY.md)) |
+| `The envFile option is deprecated…` | Harmless. It comes from React Router's own Vite plugin (`@react-router/dev`) running on Vite 8, not from this project's config. It goes away when Hydrogen moves to a React Router release that has the fix |
+| React Router "Future Flag" warnings | Informational previews of React Router v8 behavior. Hydrogen 2026.4 doesn't opt in yet, so leave them |
+| Port 3000 in use | `npm run dev -- --port 3001`. To find what's using port 3000 on Windows: `Get-NetTCPConnection -LocalPort 3000 \| Select OwningProcess` |
 
 ## Commands
 

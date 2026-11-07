@@ -7,6 +7,7 @@
   "scripts": {
     "dev": "shopify hydrogen dev --codegen",
     "dev:mock": "concurrently -k -n mock,app \"npm:mock:api\" \"shopify hydrogen dev --codegen --env-file mock/mock.env --port 3000\"",
+    "setup:env": "node scripts/setup-env.mjs",
     "mock:api": "node mock/storefront-server.mjs",
     "build": "shopify hydrogen build --codegen",
     "preview": "shopify hydrogen preview --build",
@@ -71,7 +72,7 @@
     "prettier": "^3.4.2",
     "typescript": "^5.9.2",
     "vite": "^8.0.1",
-    "vitest": "^3.2.4"
+    "vitest": "^3.2.7"
   },
   "engines": {
     "node": "^22 || ^24"
@@ -85,6 +86,7 @@
     "@react-router/dev": "7.18.5",
     "@react-router/fs-routes": "7.18.5",
     "@react-router/node": "7.18.5",
-    "lodash": "^4.17.24"
+    "lodash": "^4.17.24",
+    "esbuild": "^0.28.2"
   }
 }

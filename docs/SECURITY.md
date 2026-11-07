@@ -29,7 +29,15 @@ This document describes the security controls in place and the responsibilities 
 
 ### Dependency note
 
-Hydrogen 2026.4.8 declares `react-router ~7.16.0`, which is affected by several high-severity advisories (GHSA-337j-9hxr-rhxg, GHSA-chx6-hx7r-mcp5, GHSA-wrjc-x8rr-h8h6 and others). `package.json` `overrides` pins **7.18.5**, and the full test suite passes on it. Remove the override once Hydrogen's peer range includes a patched version. Remaining advisory: esbuild (low; affects only the Windows dev server).
+- **React Router:** Hydrogen 2026.4.8 declares `react-router ~7.16.0`, which is affected by several high-severity advisories (GHSA-337j-9hxr-rhxg, GHSA-chx6-hx7r-mcp5, GHSA-wrjc-x8rr-h8h6 and others). `package.json` `overrides` pins **7.18.5**, and the full test suite passes on it. Remove the override once Hydrogen's peer range includes a patched version.
+- **esbuild:** the Shopify CLI and Vite pin esbuild 0.27.x, which allows arbitrary file reads from the dev server **on Windows** (GHSA-g7r4-m6w7-qqqr). `overrides` pins **^0.28.2**, and build, unit and E2E tests pass on it.
+- **`npm audit --omit=dev`: 0 vulnerabilities.**
+- **Full `npm audit`:** about 45 advisories remain, all in **development-only tooling** that never ships to Oxygen:
+  - GraphQL codegen (`@graphql-codegen/*`, `@graphql-tools/*`), via `@shopify/hydrogen-codegen` and `@shopify/cli`;
+  - the local MiniOxygen runtime (`miniflare`, `undici`, `ws`, `body-parser`, `zod`), via `@shopify/mini-oxygen`;
+  - the Vitest UI server (`vitest`, `tinypool`). This project doesn't run the UI server.
+
+  npm's suggested "fixes" for these are either **downgrades** (for example `@shopify/mini-oxygen@0.0.5`) or major versions that Hydrogen 2026.4 doesn't support. Don't run `npm audit fix --force`. They resolve as Shopify updates its CLI and Hydrogen toolchain; re-check with each `npx shopify hydrogen upgrade`.
 
 ## Administration access
 
