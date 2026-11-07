@@ -63,9 +63,18 @@ export default {
         url: new URL(request.url).pathname,
         method: request.method,
       });
+      const isProduction = process.env.NODE_ENV === 'production';
       const headers = new Headers({'Content-Type': 'text/plain; charset=utf-8'});
-      applySecurityHeaders(headers, {isProduction: process.env.NODE_ENV === 'production'});
-      return new Response('An unexpected error occurred', {status: 500, headers});
+      applySecurityHeaders(headers, {isProduction});
+      // In local development, show the actual error message (never the stack
+      // or env values) so setup problems like a missing .env are obvious.
+      // Production keeps the generic message.
+      const body = isProduction
+        ? 'An unexpected error occurred'
+        : `An unexpected error occurred (development details):\n\n${
+            error instanceof Error ? error.message : String(error)
+          }\n\nSee the terminal for the full error and README.md → Troubleshooting.`;
+      return new Response(body, {status: 500, headers});
     }
   },
 };
