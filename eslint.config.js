@@ -242,8 +242,10 @@ export default [
   },
   {
     // Mock server & fixtures are plain Node ESM scripts (dev/test only).
-    files: ['mock/**/*.mjs', '*.config.ts'],
+    files: ['mock/**/*.mjs', 'scripts/**/*.mjs', '*.config.ts'],
     languageOptions: {globals: {...globals.node}},
+    // CLI scripts print to the terminal by design.
+    rules: {'no-console': 'off'},
   },
   {
     files: ['**/*.server.*'],

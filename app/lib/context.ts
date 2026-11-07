@@ -36,7 +36,19 @@ export async function createHydrogenRouterContext(
    * Open a cache instance in the worker and a custom session instance.
    */
   if (!env?.SESSION_SECRET) {
-    throw new Error('SESSION_SECRET environment variable is not set');
+    throw new Error(
+      'SESSION_SECRET environment variable is not set. ' +
+        'Run `npm run setup:env` to create .env with a secure secret, ' +
+        'then `npx shopify hydrogen env pull` to add your store credentials ' +
+        '(or use `npm run dev:mock` to preview with sample data).',
+    );
+  }
+  if (!env.PUBLIC_STORE_DOMAIN) {
+    throw new Error(
+      'PUBLIC_STORE_DOMAIN environment variable is not set. ' +
+        'Run `npx shopify hydrogen link` then `npx shopify hydrogen env pull` ' +
+        '(see docs/SHOPIFY_SETUP.md), or use `npm run dev:mock` to preview with sample data.',
+    );
   }
 
   const waitUntil = executionContext.waitUntil.bind(executionContext);
